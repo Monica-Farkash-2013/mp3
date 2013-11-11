@@ -33,12 +33,14 @@ public class AutocompleteServletAPI extends HttpServlet {
         
         if (search_text != null) {   		  
 			for (Hints hint : hints) {
-				if ((hint.label).indexOf(search_text) != -1) {
-					sorted_hints.add(hint);
+				if ((hint.value).indexOf(search_text) != -1) {
+					Hints h = new Hints(hint.id, hint.value.concat(" ").concat(hint.label), hint.value);
+					sorted_hints.add(h);
 					count++;
 				}
-				else if ((hint.value!=null)&& (hint.value).indexOf(search_text) != -1) {
-						sorted_hints.add(hint); 
+				else if ((hint.label!=null)&& (hint.label).indexOf(search_text) != -1) {
+					Hints h = new Hints(hint.id, hint.value.concat(" ").concat(hint.label), hint.value);
+						sorted_hints.add(h); 
 						count++;
 				}
 				if (count >= 20)

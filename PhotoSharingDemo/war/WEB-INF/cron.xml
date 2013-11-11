@@ -13,6 +13,6 @@
   <cron>
     <url>/cron/hints</url>
     <description>Refresh search hint list</description>
-    <schedule>every 1 hour</schedule>
+    <schedule>every 60 minutes</schedule>
   </cron>
 </cronentries>

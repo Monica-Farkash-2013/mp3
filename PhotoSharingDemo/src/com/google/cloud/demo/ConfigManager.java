@@ -138,6 +138,27 @@ public class ConfigManager {
   }
 
   /**
+   * The map web page URL.
+   */
+  public String getMapPageUrl() {
+    return "/Map.jsp";
+  }
+
+  /**
+   * The socia web page URL.
+   */
+  public String getSocialPageUrl() {
+    return "/Social.jsp";
+  }
+
+  /**
+   * The trending web page URL.
+   */
+  public String getTrendingPageUrl() {
+    return "/Trending.jsp";
+  }
+
+  /**
    * The manage web page URL.
    */
   public String getManagePageUrl() {

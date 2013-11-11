@@ -292,7 +292,7 @@ function selectCover(sel, url) {
 		
     	<a id="btn-choose-image" class="active btn" href="Map.jsp?user=<%=(streamUserId + "&stream-id=" + streamId) %>">Geo view</a>
        		
-
+ 
         <div class="container">
             <br>
             <!-- The file upload form used as target for the file upload widget -->

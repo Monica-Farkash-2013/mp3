@@ -65,7 +65,8 @@ public class PhotoServiceManager {
 	    	handler = "/UploadServlet";
 	    String createdUrl = blobstoreService.createUploadUrl(handler, uploadOptions);
 	    String retUrl = StripUrlFromParameters(createdUrl);
-	    return createdUrl;
+	    //return createdUrl;
+	    return retUrl;
 	  }
 
   public String getCreateAlbumCoverUrl() {

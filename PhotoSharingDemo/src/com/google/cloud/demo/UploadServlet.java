@@ -27,6 +27,7 @@ import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
 import com.google.appengine.api.images.Image;
 import com.google.appengine.api.images.ImagesService;
 import com.google.appengine.api.images.ImagesServiceFactory;
+import com.google.appengine.api.images.ServingUrlOptions;
 import com.google.appengine.api.images.Transform;
 
 @SuppressWarnings("serial")
@@ -41,10 +42,9 @@ public class UploadServlet extends HttpServlet {
 
         AppContext appContext = AppContext.getAppContext();
         DemoUser user = appContext.getCurrentUser();
-        if (user == null) {
-        	response.sendError(401, "You have to login to upload image.");
-          return;
-        }
+		PhotoServiceManager serviceManager = appContext.getPhotoServiceManager();
+	    PhotoManager photoManager = appContext.getPhotoManager();
+		
         String albumId = request.getParameter(ServletUtils.REQUEST_PARAM_NAME_ALBUM_ID);
         
         if (request.getParameter("getfile") != null && !request.getParameter("getfile").isEmpty()) {
@@ -75,6 +75,8 @@ public class UploadServlet extends HttpServlet {
             if (file.exists()) {
                 file.delete(); // TODO:check and report success
             } */
+        	long id = Long.parseLong(request.getParameter("delfile"));
+	    	Photo photo = photoManager.deactivePhoto(user.getUserId(), id);
         } else if (request.getParameter("getthumb") != null && !request.getParameter("getthumb").isEmpty()) {
             /*
         	File file = new File(request.getServletPath()+"imgs/"+request.getParameter("getthumb"));
@@ -131,8 +133,7 @@ public class UploadServlet extends HttpServlet {
             PrintWriter writer = response.getWriter();
             writer.write("call POST with multipart form data");
         }
-    	response.sendRedirect(appContext.getPhotoServiceManager().getRedirectUrl(
-    			request.getParameter(ServletUtils.REQUEST_PARAM_NAME_TARGET_URL), user.getUserId(), null, albumId, "viewstream",null));
+    	response.sendRedirect(serviceManager.getViewUrl(null, user.getUserId(), null, albumId, "viewstream", null));
 
     }
     
@@ -164,7 +165,8 @@ public class UploadServlet extends HttpServlet {
         String id = null;
         String albumId = null;
         boolean succeeded = false;
-
+        BlobKey blobKey = null;
+        
         if (keys != null && keys.size() > 0) {
             PhotoManager photoManager = appContext.getPhotoManager();
             albumId = request.getParameter(ServletUtils.REQUEST_PARAM_NAME_ALBUM_ID);
@@ -186,7 +188,7 @@ public class UploadServlet extends HttpServlet {
 	                    }
 
 	                    if (it.hasNext()) {
-            	            BlobKey blobKey = it.next();
+            	            blobKey = it.next();
                         	Photo photo = photoManager.newPhoto(user.getUserId());
                             
             	            String title = request.getParameter("title");
@@ -216,9 +218,16 @@ public class UploadServlet extends HttpServlet {
                         JSONObject jsono = new JSONObject();
                         jsono.put("name", item.getName());
                         jsono.put("size", String.valueOf(size)); 
-                        jsono.put("url", "UploadServlet?getfile=" + id +"&stream-id=" + albumId);
-                        jsono.put("thumbnail_url", "UploadServlet?getthumb=" + id +"&stream-id=" + albumId);
-                        jsono.put("delete_url", "UploadServlet?delfile=" + id +"&stream-id=" + albumId);
+                        //jsono.put("url", "UploadServlet?getfile=" + id +"&stream-id=" + albumId);
+                        //jsono.put("thumbnail_url", "UploadServlet?getthumb=" + id +"&stream-id=" + albumId);
+                        jsono.put("url", "/download?id=" + id +"&user=" + user.getUserId());
+                        
+                        ImagesService imagesService = ImagesServiceFactory.getImagesService();
+                        ServingUrlOptions servingUrlOptions = ServingUrlOptions.Builder.withBlobKey(blobKey);
+                        imagesService.getServingUrl(servingUrlOptions);
+                        //jsono.put("thumbnail_url", "/download?id=" + id +"&user=" + user.getUserId());
+                        jsono.put("thumbnail_url", imagesService.getServingUrl(servingUrlOptions) +"=s75");
+                        jsono.put("delete_url", "UploadServlet?delfile=" + id);
                         jsono.put("delete_type", "GET");
                         json.put(jsono);
                         System.out.println(json.toString());

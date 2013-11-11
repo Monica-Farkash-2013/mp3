@@ -97,7 +97,7 @@
                   <a href=<%= userService.createLogoutURL(configManager.getLoginPageUrl())%>>Sign out</a>
    			<% } else {%>
             <li class="active">
-                  <a href=<%= userService.createLoginURL(configManager.getMainPageUrl())%>>Sign in</a>   
+                  <a href=<%= userService.createLoginURL(configManager.getSearchPageUrl())%>>Sign in</a>   
    			<% } %>  
     		</li>
           </ul>

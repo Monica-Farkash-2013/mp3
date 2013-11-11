@@ -49,7 +49,7 @@ public class UpdateSearchHintServlet extends HttpServlet {
 
 	  	try {
 			for (Album album : albumIter) {
-				Hints s = new Hints(album.getTitle(), album.getTags());
+				Hints s = new Hints(album.getTags(), album.getTitle());
 				if (!s.isAlreadyInList(s))
 					// persist to datastore
 					ofy().save().entity(s).now();

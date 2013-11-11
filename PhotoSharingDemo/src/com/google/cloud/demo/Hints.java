@@ -16,8 +16,8 @@ public class Hints implements Comparable<Hints> {
 	// id is set by the datastore for us
 	@Id
 	public Long id;
-	public String label;
 	public String value;
+	public String label;
   
 	// TODO: figure out why this is needed
 	@SuppressWarnings("unused")
@@ -27,20 +27,29 @@ public class Hints implements Comparable<Hints> {
 	@Override
 	public String toString() {
 		Joiner joiner = Joiner.on(":");
-		return joiner.join(id.toString(), label, value);
+		return joiner.join(id.toString(), value, label);
  	}
 
 	public Hints(String label, String value) {
-		this.label = label;
-		if(value == null)
-			this.value = label;
+		this.value = value;
+		if(label == null)
+			this.label = value;
 		else
-			this.value = value;
+			this.label = label;
+	}
+
+	public Hints(Long id, String label, String value) {
+		this.id = id;
+		this.value = value;
+		if(label == null)
+			this.label = value;
+		else
+			this.label = label;
 	}
 
 	@Override
 	public int compareTo(Hints other) {
-		return label.compareTo(other.label);
+		return value.compareTo(other.value);
 	}
 	
 	public boolean isAlreadyInList(Hints other) {

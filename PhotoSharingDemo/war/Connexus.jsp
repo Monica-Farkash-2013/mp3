@@ -97,6 +97,7 @@
          	Iterable<Photo> photoIter = photoManager.getOwnedAlbumPhotos(album.getOwnerId().toString(), album.getId().toString());
          	try {
 	           	for (Photo photo : photoIter) {
+	        		count++;
 	          		if(photo.isAlbumCover())
 	          			coverPhoto = photo;
 	           	}
@@ -107,7 +108,8 @@
 			if(coverPhoto == null)
 				coverPhotoUrl = ServletUtils.getUserIconImageUrl(album.getOwnerId());
 			else
-				coverPhotoUrl = serviceManager.getImageDownloadUrl(coverPhoto);	    	  
+				coverPhotoUrl = serviceManager.getImageDownloadUrl(coverPhoto);	    
+			String picts = " has " + String.valueOf(count) + " pictures";
 	%>
     		<div class="feed">
 	      		<div class="post group">
@@ -121,10 +123,10 @@
 	        		</div>
 		        	<div class="owner group">
 		          		<div class="desc">
-		            		<h3><%= ServletUtils.getProtectedUserNickname(album.getOwnerNickname()) %></h3>	            
+		            		<h5><%= ServletUtils.getProtectedUserNickname(album.getOwnerNickname()) %></h5>	            
 		            		<p class="timestamp"><%= ServletUtils.formatTimestamp(album.getUploadTime()) %></p>
-		            		<p>
-		            		<p><c:out value="<%= album.getTitle() %>" escapeXml="true"/>
+		            		<p class="timestamp"><%=picts %></p>
+		            		<p class="h4"><c:out value="<%= album.getTitle()%>" escapeXml="true"/>
 		          		</div>
 		          		<!-- /.desc -->
 	       			</div>
@@ -134,7 +136,6 @@
 	  		</div>
    			<!-- /.feed -->
 	<%	
-		count++;
      	}
    	%>
     </div> <!-- /container -->

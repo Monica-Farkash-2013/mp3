@@ -24,7 +24,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>Insert title here</title>
+<title>Connexus Photo Album Mananger</title>
 <!-- Bootstrap core CSS -->
 <link href="../../bootstrap/css/bootstrap.css" rel="stylesheet">
 
@@ -85,8 +85,9 @@ $(function() {
 						var index = Math.round(1000  * Math.random()) % stam;
 						var pictureDate = new Date(items[index].createDate);
 						if(pictureDate.getTime() < begin.getTime() || pictureDate.getTime() > finish.getTime())
-							$('#map_canvas').gmap('openInfoWindow', { content : '<img src="img/photofeed.png"/> <p class="timestamp">' +
-								'Date out of range' + '</p>'}, this);
+							$('#map_canvas').gmap('openInfoWindow', { content : '<img src="img/photofeed.png"/> 
+								<p class="timestamp">'  +items[index].createDate + '</p>' +
+								<p class="timestamp">' + 'Date out of range' + '</p>'}, this);
 						else
 							$('#map_canvas').gmap('openInfoWindow', { content : '<img class="photo-map" src='+items[index].bkUrl+
 								' /> <p class="timestamp">'  +items[index].createDate + '</p>'}, this);

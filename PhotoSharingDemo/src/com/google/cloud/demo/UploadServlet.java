@@ -1,18 +1,16 @@
 package com.google.cloud.demo;
 
 import java.io.*;
-import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.fileupload.FileItemIterator;
-import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -20,20 +18,21 @@ import org.json.JSONObject;
 import com.google.cloud.demo.model.DemoUser;
 import com.google.cloud.demo.model.Photo;
 import com.google.cloud.demo.model.PhotoManager;
-import com.google.common.io.Files;
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.blobstore.BlobstoreService;
 import com.google.appengine.api.blobstore.BlobstoreServiceFactory;
+import com.google.appengine.api.blobstore.FileInfo;
 import com.google.appengine.api.images.Image;
 import com.google.appengine.api.images.ImagesService;
 import com.google.appengine.api.images.ImagesServiceFactory;
-import com.google.appengine.api.images.ServingUrlOptions;
 import com.google.appengine.api.images.Transform;
 
 @SuppressWarnings("serial")
 public class UploadServlet extends HttpServlet {
         
-    /**
+	private static final Logger logger =
+		      Logger.getLogger(UploadServlet.class.getCanonicalName());
+   /**
         * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
         * 
         */
@@ -129,11 +128,35 @@ public class UploadServlet extends HttpServlet {
                         }
                     } 
             } */// TODO: check and report success
+            String id = request.getParameter("getthumb");
+            Long photoId = ServletUtils.validatePhotoId(id);
+            if (photoId != null) {
+	              Photo photo = AppContext.getAppContext().getPhotoManager().getPhoto(user.getUserId(), photoId);
+	              BlobKey blobKey = photo.getBlobKey();
+	              ImagesService imagesService = ImagesServiceFactory.getImagesService();
+	
+	              Image oldImage = ImagesServiceFactory.makeImageFromBlob(blobKey);
+	              Transform resize = ImagesServiceFactory.makeResize(75, 75);
+	
+	              Image newImage = imagesService.applyTransform(resize, oldImage);
+	
+	              byte[] newImageData = newImage.getImageData();
+                  ByteArrayOutputStream os = new ByteArrayOutputStream();
+                  os.write(newImageData);
+                  ServletOutputStream srvos = response.getOutputStream();
+                  response.setContentType("image/png");
+                  response.setContentLength(os.size());
+                  response.setHeader( "Content-Disposition", "inline; filename=\"" + photo.getTitle() + "\"" );
+                  os.writeTo(srvos);
+                  srvos.flush();
+                  srvos.close();
+            }
+
         } else {
             PrintWriter writer = response.getWriter();
             writer.write("call POST with multipart form data");
         }
-    	response.sendRedirect(serviceManager.getViewUrl(null, user.getUserId(), null, albumId, "viewstream", null));
+    	//response.sendRedirect(serviceManager.getViewUrl(null, user.getUserId(), null, albumId, "viewstream", null));
 
     }
     
@@ -144,7 +167,7 @@ public class UploadServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
-        AppContext appContext = AppContext.getAppContext();
+    	AppContext appContext = AppContext.getAppContext();
         DemoUser user = appContext.getCurrentUser();
         if (user == null) {
         	response.sendError(401, "You have to login to upload image.");
@@ -154,84 +177,77 @@ public class UploadServlet extends HttpServlet {
             throw new IllegalArgumentException("Request is not multipart, please 'multipart/form-data' enctype for your form.");
         }
 
-        ServletFileUpload uploadHandler = new ServletFileUpload();//new DiskFileItemFactory());
         PrintWriter writer = response.getWriter();
         response.setContentType("application/json");
         JSONArray json = new JSONArray();
 
         BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();
         Map<String, List<BlobKey>> blobs = blobstoreService.getUploads(request);
+        Map<String, List<FileInfo>> infos = blobstoreService.getFileInfos(request);
         List<BlobKey> keys = blobs.get("files[]");
+        List<FileInfo> fileinfos = infos.get("files[]");
         String id = null;
         String albumId = null;
         boolean succeeded = false;
         BlobKey blobKey = null;
+        FileInfo info = null;
         
         if (keys != null && keys.size() > 0) {
             PhotoManager photoManager = appContext.getPhotoManager();
             albumId = request.getParameter(ServletUtils.REQUEST_PARAM_NAME_ALBUM_ID);
             
-            try {
-    			//List<FileItem> items = uploadHandler.parseRequest(request);
-                FileItemIterator iterator = uploadHandler.getItemIterator(request);
+        	try {
                 Iterator<BlobKey> it = keys.iterator();
-	            
-                while (iterator.hasNext()) {
-    	            FileItemStream item = iterator.next();           	
-                    if (!item.isFormField()) {
-	                    int len;
-	                    int size = 0;
-	                    InputStream stream = item.openStream();
-	                    byte[] buffer = new byte[8192];
-	                    while ((len = stream.read(buffer, 0, buffer.length)) != -1) {
-	                    	size += len;
-	                    }
+                Iterator<FileInfo> itInfo = fileinfos.iterator();
 
-	                    if (it.hasNext()) {
-            	            blobKey = it.next();
-                        	Photo photo = photoManager.newPhoto(user.getUserId());
-                            
-            	            String title = request.getParameter("title");
-            	            if (title != null) {
-            	              photo.setTitle(title);
-            	            }
-            	            else
-            	            	photo.setTitle(item.getName());
-                        
-            	            String isPrivate = request.getParameter(ServletUtils.REQUEST_PARAM_NAME_PRIVATE);
-            	            photo.setShared(isPrivate == null);
-            	            
-            	            photo.setAlbumId(albumId);
+                while (it.hasNext()) { 
+    	            blobKey = it.next();
+    	            info = itInfo.next();
+                	Photo photo = photoManager.newPhoto(user.getUserId());
+     	            String title = request.getParameter("title");
+    	            if (title != null) {
+    	              photo.setTitle(title);
+    	            }
+    	            else
+    	            	photo.setTitle(info.getFilename());
+                
+    	            String isPrivate = request.getParameter(ServletUtils.REQUEST_PARAM_NAME_PRIVATE);
+    	            photo.setShared(isPrivate == null);
+    	            
+    	            photo.setAlbumId(albumId);
+    	
+    	            photo.setOwnerNickname(ServletUtils.getProtectedUserNickname(user.getNickname()));
+    	
+    	            photo.setBlobKey(blobKey);
+    	
+    	            photo.setUploadTime(System.currentTimeMillis());
+    	
+    	            photo = photoManager.upsertEntity(photo);
+    	            id = photo.getId().toString();
+ 
+                    System.out.println(info.getFilename() + "  " + String.valueOf(info.getSize()));
+
             	
-            	            photo.setOwnerNickname(ServletUtils.getProtectedUserNickname(user.getNickname()));
-            	
-            	            //BlobKey blobKey = keys.get(0);
-            	            photo.setBlobKey(blobKey);
-            	
-            	            photo.setUploadTime(System.currentTimeMillis());
-            	
-            	            photo = photoManager.upsertEntity(photo);
-            	            id = photo.getId().toString();
-                           
-                        }
-                	
-                        JSONObject jsono = new JSONObject();
-                        jsono.put("name", item.getName());
-                        jsono.put("size", String.valueOf(size)); 
-                        //jsono.put("url", "UploadServlet?getfile=" + id +"&stream-id=" + albumId);
-                        //jsono.put("thumbnail_url", "UploadServlet?getthumb=" + id +"&stream-id=" + albumId);
-                        jsono.put("url", "/download?id=" + id +"&user=" + user.getUserId());
-                        
-                        ImagesService imagesService = ImagesServiceFactory.getImagesService();
-                        ServingUrlOptions servingUrlOptions = ServingUrlOptions.Builder.withBlobKey(blobKey);
-                        imagesService.getServingUrl(servingUrlOptions);
-                        //jsono.put("thumbnail_url", "/download?id=" + id +"&user=" + user.getUserId());
-                        jsono.put("thumbnail_url", imagesService.getServingUrl(servingUrlOptions) +"=s75");
-                        jsono.put("delete_url", "UploadServlet?delfile=" + id);
-                        jsono.put("delete_type", "GET");
-                        json.put(jsono);
-                        System.out.println(json.toString());
+                    JSONObject jsono = new JSONObject();
+                   	jsono.put("name", info.getFilename());
+                    jsono.put("size", String.valueOf(info.getSize())); 
+                    //jsono.put("url", "UploadServlet?getfile=" + id +"&stream-id=" + albumId);
+                    jsono.put("url", "/download?id=" + id +"&user=" + user.getUserId());
+                    jsono.put("thumbnail_url", "UploadServlet?getthumb=" + id +"&stream-id=" + albumId);
+                    /*
+                    try {
+                    	ImagesService imagesService = ImagesServiceFactory.getImagesService();
+                    	ServingUrlOptions servingUrlOptions = ServingUrlOptions.Builder.withBlobKey(blobKey);
+                    	imagesService.getServingUrl(servingUrlOptions);
+                    	jsono.put("thumbnail_url", imagesService.getServingUrl(servingUrlOptions) +"=s75");
+                    } catch (ImagesServiceFailureException e) {
+                    	jsono.put("thumbnail_url", "/download?id=" + id +"&user=" + user.getUserId());
                     }
+                    */
+                    jsono.put("delete_url", "UploadServlet?delfile=" + id);
+                    jsono.put("delete_type", "GET");
+                    json.put(jsono);
+                    System.out.println(json.toString());
                 }
             //} catch (FileUploadException e) {
             //        throw new RuntimeException(e);
@@ -245,8 +261,8 @@ public class UploadServlet extends HttpServlet {
             succeeded = true;
         }
         if (succeeded) {
-        	//response.sendRedirect(appContext.getPhotoServiceManager().getRedirectUrl(
-        			//request.getParameter(ServletUtils.REQUEST_PARAM_NAME_TARGET_URL), user.getUserId(), id, albumId, "viewstream",null));
+        	//response.sendRedirect(appContext.getPhotoServiceManager().getViewUrl(
+        		//	request.getParameter(ServletUtils.REQUEST_PARAM_NAME_TARGET_URL), user.getUserId(), id, albumId, "viewstream",null));
         } else {
         	  response.sendError(400, "Request cannot be handled.");
         }  

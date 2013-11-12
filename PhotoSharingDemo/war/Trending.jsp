@@ -159,9 +159,7 @@
       	}
       }
     %>
-       	<div class = box >	
-  		</div>
-         <div class="next-3-pict" >
+        <div class="trend-checks" >
                  <%-- MCM: replace action form with update rate --%>
         	<form   
                action="<%= configManager.getSetCronTimeUrl() %>"method="post"> 

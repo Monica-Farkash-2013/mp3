@@ -65,8 +65,10 @@ public class PhotoServiceManager {
 	    	handler = "/UploadServlet";
 	    String createdUrl = blobstoreService.createUploadUrl(handler, uploadOptions);
 	    String retUrl = StripUrlFromParameters(createdUrl);
-	    //return createdUrl;
-	    return retUrl;
+        System.out.println(retUrl);
+        System.out.println(createdUrl);
+	    return createdUrl;
+	    //return retUrl;
 	  }
 
   public String getCreateAlbumCoverUrl() {
@@ -98,7 +100,7 @@ public class PhotoServiceManager {
 		  else {
 			  int slash = createdUrl.indexOf('/', mark);
 			  if(slash != -1) {
-				  int end = createdUrl.length() - 1;
+				  int end = createdUrl.length();
 				  String blob_part = createdUrl.substring(slash+1, end);
 				  String hostUrl = createdUrl.substring(0, mark);
 				  retUrl = hostUrl.concat(blob_part);

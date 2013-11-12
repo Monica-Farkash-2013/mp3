@@ -103,8 +103,14 @@ p.timestamp {
 
 .next-3-pict {
   position:relative;
-  top: 400px;
+  top: 500px;
   left: 5px;
+}
+
+.trend-checks {
+  position:relative;
+  top: 30px;
+  left: 15px;
 }
 
 .check {
